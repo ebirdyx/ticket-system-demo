@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from .models import Priority, Status, Ticket
 from .store import TicketStore
 from .workflow import transition
@@ -37,6 +39,22 @@ class TicketService:
         ticket.assignee = assignee
         self.store.save(ticket)
         return ticket
+
+    def set_due_date(self, ticket_id: int, due: date | None) -> Ticket:
+        """Set or clear the due date of a ticket."""
+        ticket = self.get(ticket_id)
+        ticket.due_date = due
+        self.store.save(ticket)
+        return ticket
+
+    def overdue(self, today: date | None = None) -> list[Ticket]:
+        """Tickets whose due date has passed and that are not closed."""
+        today = today or date.today()
+        return [
+            t for status in (Status.OPEN, Status.IN_PROGRESS, Status.RESOLVED)
+            for t in self.store.list_by_status(status)
+            if t.due_date is not None and t.due_date < today
+        ]
 
     def change_status(self, ticket_id: int, new_status: Status) -> Ticket:
         ticket = self.get(ticket_id)

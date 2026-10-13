@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime
 
 from .models import Priority, Status, Ticket
 
@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS tickets (
     priority TEXT NOT NULL,
     status TEXT NOT NULL,
     assignee TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    due_date TEXT
 )
 """
 
@@ -30,10 +31,10 @@ class TicketStore:
     def add(self, ticket: Ticket) -> Ticket:
         """Insert a ticket and return it with its new id."""
         cursor = self._db.execute(
-            "INSERT INTO tickets (title, description, reporter, priority, status, assignee, created_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO tickets (title, description, reporter, priority, status, assignee, created_at, due_date)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (ticket.title, ticket.description, ticket.reporter, ticket.priority.value, ticket.status.value,
-             ticket.assignee, ticket.created_at.isoformat()),
+             ticket.assignee, ticket.created_at.isoformat(), ticket.due_date.isoformat() if ticket.due_date else None),
         )
         self._db.commit()
         ticket.id = cursor.lastrowid
@@ -45,8 +46,10 @@ class TicketStore:
 
     def save(self, ticket: Ticket) -> None:
         self._db.execute(
-            "UPDATE tickets SET title = ?, description = ?, priority = ?, status = ?, assignee = ? WHERE id = ?",
-            (ticket.title, ticket.description, ticket.priority.value, ticket.status.value, ticket.assignee, ticket.id),
+            "UPDATE tickets SET title = ?, description = ?, priority = ?, status = ?, assignee = ?, due_date = ?"
+            " WHERE id = ?",
+            (ticket.title, ticket.description, ticket.priority.value, ticket.status.value, ticket.assignee,
+             ticket.due_date.isoformat() if ticket.due_date else None, ticket.id),
         )
         self._db.commit()
 
@@ -66,4 +69,5 @@ def _from_row(row: sqlite3.Row) -> Ticket:
         id=row["id"], title=row["title"], description=row["description"], reporter=row["reporter"],
         priority=Priority(row["priority"]), status=Status(row["status"]), assignee=row["assignee"],
         created_at=datetime.fromisoformat(row["created_at"]),
+        due_date=date.fromisoformat(row["due_date"]) if row["due_date"] else None,
     )
