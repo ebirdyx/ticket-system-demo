@@ -38,6 +38,15 @@ class TicketService:
         self.store.save(ticket)
         return ticket
 
+    def resolve(self, ticket_id: int, actor: str, admins: frozenset[str] = frozenset()) -> Ticket:
+        """Mark a ticket resolved. Raises PermissionError if `actor` is not allowed to."""
+        ticket = self.get(ticket_id)
+        if actor != ticket.assignee and actor != ticket.reporter:
+            raise PermissionError(f"{actor} cannot resolve ticket {ticket_id}")
+        transition(ticket, Status.RESOLVED)
+        self.store.save(ticket)
+        return ticket
+
     def change_status(self, ticket_id: int, new_status: Status) -> Ticket:
         ticket = self.get(ticket_id)
         transition(ticket, new_status)

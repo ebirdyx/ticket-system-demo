@@ -47,3 +47,29 @@ def test_status_follows_the_workflow(service):
     assert service.get(ticket.id).status is Status.RESOLVED
     with pytest.raises(InvalidTransition):
         service.change_status(ticket.id, Status.IN_PROGRESS)
+
+
+def started(service):
+    ticket = service.create_ticket("t", "", "alice")
+    service.assign(ticket.id, "bob")
+    service.change_status(ticket.id, Status.IN_PROGRESS)
+    return ticket
+
+
+def test_the_assignee_can_resolve(service):
+    ticket = started(service)
+    assert service.resolve(ticket.id, "bob").status is Status.RESOLVED
+
+
+def test_someone_else_cannot_resolve(service):
+    ticket = started(service)
+    with pytest.raises(PermissionError):
+        service.resolve(ticket.id, "mallory")
+    assert service.get(ticket.id).status is Status.IN_PROGRESS
+
+
+def test_resolving_follows_the_workflow(service):
+    ticket = service.create_ticket("t", "", "alice")
+    service.assign(ticket.id, "bob")
+    with pytest.raises(InvalidTransition):
+        service.resolve(ticket.id, "bob")
