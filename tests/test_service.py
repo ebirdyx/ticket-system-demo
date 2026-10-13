@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from tickets.models import Priority, Status
@@ -47,3 +49,18 @@ def test_status_follows_the_workflow(service):
     assert service.get(ticket.id).status is Status.RESOLVED
     with pytest.raises(InvalidTransition):
         service.change_status(ticket.id, Status.IN_PROGRESS)
+
+
+def test_a_due_date_can_be_set_and_cleared(service):
+    ticket = service.create_ticket("t", "", "alice")
+    assert service.set_due_date(ticket.id, date(2026, 11, 1)).due_date == date(2026, 11, 1)
+    assert service.get(ticket.id).due_date == date(2026, 11, 1)
+    assert service.set_due_date(ticket.id, None).due_date is None
+
+
+def test_overdue_tickets_are_listed(service):
+    late = service.create_ticket("late", "", "alice")
+    fine = service.create_ticket("fine", "", "alice")
+    service.set_due_date(late.id, date(2026, 10, 1))
+    service.set_due_date(fine.id, date(2026, 12, 1))
+    assert [t.id for t in service.overdue(date(2026, 10, 13))] == [late.id]

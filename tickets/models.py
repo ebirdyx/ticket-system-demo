@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 
 
@@ -31,3 +31,4 @@ class Ticket:
     status: Status = Status.OPEN
     assignee: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    due_date: date | None = None
