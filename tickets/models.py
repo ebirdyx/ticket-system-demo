@@ -22,6 +22,15 @@ class Priority(StrEnum):
 
 
 @dataclass
+class Comment:
+    id: int
+    ticket_id: int
+    author: str
+    body: str
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass
 class Ticket:
     id: int
     title: str
