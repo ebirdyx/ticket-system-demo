@@ -47,3 +47,31 @@ def test_status_follows_the_workflow(service):
     assert service.get(ticket.id).status is Status.RESOLVED
     with pytest.raises(InvalidTransition):
         service.change_status(ticket.id, Status.IN_PROGRESS)
+
+
+def test_comments_are_listed_oldest_first(service):
+    ticket = service.create_ticket("t", "", "alice")
+    service.add_comment(ticket.id, "bob", "first")
+    service.add_comment(ticket.id, "carol", "second")
+    assert [c.body for c in service.comments(ticket.id)] == ["first", "second"]
+
+
+@pytest.mark.parametrize("body", ["", "   \n"])
+def test_empty_comments_are_rejected(service, body):
+    ticket = service.create_ticket("t", "", "alice")
+    with pytest.raises(ValueError, match="cannot be empty"):
+        service.add_comment(ticket.id, "bob", body)
+
+
+def test_comment_length_limit_is_inclusive(service):
+    from tickets.service import MAX_COMMENT
+
+    ticket = service.create_ticket("t", "", "alice")
+    assert service.add_comment(ticket.id, "bob", "x" * MAX_COMMENT)
+    with pytest.raises(ValueError, match="at most"):
+        service.add_comment(ticket.id, "bob", "x" * (MAX_COMMENT + 1))
+
+
+def test_commenting_on_an_unknown_ticket_fails(service):
+    with pytest.raises(TicketNotFound):
+        service.add_comment(999, "bob", "hello")

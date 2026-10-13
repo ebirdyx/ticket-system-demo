@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime
 
-from .models import Priority, Status, Ticket
+from .models import Comment, Priority, Status, Ticket
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tickets (
@@ -21,11 +21,23 @@ CREATE TABLE IF NOT EXISTS tickets (
 """
 
 
+COMMENTS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER NOT NULL REFERENCES tickets(id),
+    author TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL
+)
+"""
+
+
 class TicketStore:
     def __init__(self, path: str = ":memory:"):
         self._db = sqlite3.connect(path)
         self._db.row_factory = sqlite3.Row
         self._db.execute(SCHEMA)
+        self._db.execute(COMMENTS_SCHEMA)
 
     def add(self, ticket: Ticket) -> Ticket:
         """Insert a ticket and return it with its new id."""
@@ -59,6 +71,26 @@ class TicketStore:
             "SELECT * FROM tickets WHERE title LIKE ? ORDER BY id", (f"%{term}%",)
         ).fetchall()
         return [_from_row(r) for r in rows]
+
+
+    def add_comment(self, comment: Comment) -> Comment:
+        """Insert a comment and return it with its new id."""
+        cursor = self._db.execute(
+            "INSERT INTO comments (ticket_id, author, body, created_at) VALUES (?, ?, ?, ?)",
+            (comment.ticket_id, comment.author, comment.body, comment.created_at.isoformat()),
+        )
+        self._db.commit()
+        comment.id = cursor.lastrowid
+        return comment
+
+    def list_comments(self, ticket_id: int) -> list[Comment]:
+        """Comments of a ticket, oldest first."""
+        rows = self._db.execute("SELECT * FROM comments WHERE ticket_id = ? ORDER BY id", (ticket_id,)).fetchall()
+        return [
+            Comment(id=r["id"], ticket_id=r["ticket_id"], author=r["author"], body=r["body"],
+                    created_at=datetime.fromisoformat(r["created_at"]))
+            for r in rows
+        ]
 
 
 def _from_row(row: sqlite3.Row) -> Ticket:
