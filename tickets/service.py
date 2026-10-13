@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from .models import Priority, Status, Ticket
 from .store import TicketStore
 from .workflow import transition
@@ -14,8 +16,9 @@ class TicketNotFound(Exception):
 
 
 class TicketService:
-    def __init__(self, store: TicketStore):
+    def __init__(self, store: TicketStore, notifier: Callable[[str, str], None] | None = None):
         self.store = store
+        self.notifier = notifier
 
     def create_ticket(self, title: str, description: str, reporter: str, priority: Priority = Priority.MEDIUM) -> Ticket:
         """Create an open ticket. The title is required and at most MAX_TITLE characters."""
@@ -36,6 +39,11 @@ class TicketService:
         ticket = self.get(ticket_id)
         ticket.assignee = assignee
         self.store.save(ticket)
+        if self.notifier:
+            try:
+                self.notifier(assignee, f"Ticket {ticket.id} was assigned to you: {ticket.title}")
+            except Exception:
+                pass
         return ticket
 
     def change_status(self, ticket_id: int, new_status: Status) -> Ticket:
