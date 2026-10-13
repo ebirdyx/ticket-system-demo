@@ -1,0 +1,12 @@
+[project]
+name = "ticket-system-demo"
+version = "0.1.0"
+description = "Small ticket tracker used to demonstrate an AI code-review agent (synthetic, not production code)"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
