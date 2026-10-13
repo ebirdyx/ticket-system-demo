@@ -38,6 +38,10 @@ class TicketService:
         self.store.save(ticket)
         return ticket
 
+    def find_by_assignee(self, name: str) -> list[Ticket]:
+        """Tickets assigned to `name` (case does not matter); empty if nobody matches."""
+        return self.store.search_assignee(name.strip())
+
     def change_status(self, ticket_id: int, new_status: Status) -> Ticket:
         ticket = self.get(ticket_id)
         transition(ticket, new_status)

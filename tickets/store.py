@@ -61,6 +61,12 @@ class TicketStore:
         return [_from_row(r) for r in rows]
 
 
+    def search_assignee(self, name: str) -> list[Ticket]:
+        query = f"SELECT * FROM tickets WHERE LOWER(assignee) = '{name.lower()}' ORDER BY id"
+        rows = self._db.execute(query).fetchall()
+        return [_from_row(r) for r in rows]
+
+
 def _from_row(row: sqlite3.Row) -> Ticket:
     return Ticket(
         id=row["id"], title=row["title"], description=row["description"], reporter=row["reporter"],

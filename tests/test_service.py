@@ -47,3 +47,16 @@ def test_status_follows_the_workflow(service):
     assert service.get(ticket.id).status is Status.RESOLVED
     with pytest.raises(InvalidTransition):
         service.change_status(ticket.id, Status.IN_PROGRESS)
+
+
+def test_find_by_assignee_ignores_case(service):
+    mine = service.create_ticket("mine", "", "alice")
+    other = service.create_ticket("other", "", "alice")
+    service.assign(mine.id, "Bob")
+    service.assign(other.id, "carol")
+    assert [t.id for t in service.find_by_assignee("bOb")] == [mine.id]
+
+
+def test_find_by_assignee_returns_an_empty_list_when_nobody_matches(service):
+    service.create_ticket("t", "", "alice")
+    assert service.find_by_assignee("nobody") == []
