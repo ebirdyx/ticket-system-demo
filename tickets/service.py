@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 from .models import Priority, Status, Ticket
 from .store import TicketStore
 from .workflow import transition
 
 MAX_TITLE = 120
+ESCALATION_AGE = timedelta(hours=48)
+PRIORITY_ORDER = [Priority.LOW, Priority.MEDIUM, Priority.HIGH, Priority.URGENT]
 
 
 class TicketNotFound(Exception):
@@ -37,6 +41,19 @@ class TicketService:
         ticket.assignee = assignee
         self.store.save(ticket)
         return ticket
+
+    def escalate_stale(self, now: datetime | None = None) -> list[Ticket]:
+        """Raise the priority of open tickets that are old enough. Returns the tickets that were changed."""
+        now = now or datetime.now(UTC)
+        changed = []
+        for ticket in self.store.list_by_status(Status.OPEN):
+            if now - ticket.created_at > ESCALATION_AGE:
+                index = PRIORITY_ORDER.index(ticket.priority)
+                if index < len(PRIORITY_ORDER) - 1:
+                    ticket.priority = PRIORITY_ORDER[index + 1]
+                    self.store.save(ticket)
+                    changed.append(ticket)
+        return changed
 
     def change_status(self, ticket_id: int, new_status: Status) -> Ticket:
         ticket = self.get(ticket_id)
