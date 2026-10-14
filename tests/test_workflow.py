@@ -11,8 +11,9 @@ def ticket(status):
 @pytest.mark.parametrize(("start", "end"), [(s, e) for s, targets in ALLOWED.items() for e in targets])
 def test_allowed_transitions(start, end):
     t = ticket(start)
-    transition(t, end)
-    assert t.status is end
+    moved = transition(t, end)
+    assert moved.status is end
+    assert t.status is start  # the argument is left alone
 
 
 def test_closed_is_final():

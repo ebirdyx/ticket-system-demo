@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from .models import Status, Ticket
 
 ALLOWED: dict[Status, set[Status]] = {
@@ -16,8 +18,8 @@ class InvalidTransition(Exception):
     """The requested status change is not allowed from the current status."""
 
 
-def transition(ticket: Ticket, new_status: Status) -> None:
-    """Move a ticket to `new_status`, or raise InvalidTransition."""
+def transition(ticket: Ticket, new_status: Status) -> Ticket:
+    """Return a copy of `ticket` moved to `new_status`, or raise InvalidTransition. The argument is not modified."""
     if new_status not in ALLOWED[ticket.status]:
         raise InvalidTransition(f"cannot go from {ticket.status.value} to {new_status.value}")
-    ticket.status = new_status
+    return replace(ticket, status=new_status)
