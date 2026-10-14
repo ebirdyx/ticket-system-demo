@@ -1,3 +1,5 @@
+import pytest
+
 from tickets.models import Status, Ticket
 from tickets.store import TicketStore
 
@@ -10,7 +12,8 @@ def test_add_and_get_round_trip():
     store = TicketStore()
     added = store.add(make("Login fails"))
     assert store.get(added.id).title == "Login fails"
-    assert store.get(12345) is None
+    with pytest.raises(KeyError):
+        store.get(12345)
 
 
 def test_list_by_status():

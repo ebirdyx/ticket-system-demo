@@ -39,9 +39,12 @@ class TicketStore:
         ticket.id = cursor.lastrowid
         return ticket
 
-    def get(self, ticket_id: int) -> Ticket | None:
+    def get(self, ticket_id: int) -> Ticket:
+        """Return the ticket with this id. Raises KeyError if there is none."""
         row = self._db.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)).fetchone()
-        return _from_row(row) if row else None
+        if row is None:
+            raise KeyError(ticket_id)
+        return _from_row(row)
 
     def save(self, ticket: Ticket) -> None:
         self._db.execute(
