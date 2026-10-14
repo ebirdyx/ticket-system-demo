@@ -18,8 +18,7 @@ class TicketService:
         self.store = store
 
     def create_ticket(self, title: str, description: str, reporter: str, priority: Priority = Priority.MEDIUM) -> Ticket:
-        """Create an open ticket. The title is required and at most MAX_TITLE characters."""
-        title = title.strip()
+        """Create an open ticket. The title is kept exactly as typed; it is required and at most MAX_TITLE characters."""
         if not title:
             raise ValueError("a ticket needs a title")
         if len(title) > MAX_TITLE:
